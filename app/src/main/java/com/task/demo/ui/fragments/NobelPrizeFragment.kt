@@ -27,9 +27,9 @@ class NobelPrizeFragment : Fragment(R.layout.fragment_nobel_prize) {
     //    private lateinit var nobelPrizeViewModel: NobelPrizeViewModel
     private var filterList: MutableList<PrizesList> = ArrayList()
     private var actualList: MutableList<PrizesList> = ArrayList()
+    private var tempList: MutableList<PrizesList> = ArrayList()
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: NobelPrizeAdapter
-    private var isExtraCome: Boolean = false
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         recyclerView = view.findViewById<RecyclerView>(R.id.recycler_view)
@@ -43,11 +43,12 @@ class NobelPrizeFragment : Fragment(R.layout.fragment_nobel_prize) {
         App.getAPIHelper()
             .getNobelPrizes(object : BaseAPIHelper.OnRequestComplete<WrapperPrizes> {
                 override fun onSuccess(any: WrapperPrizes) {
-                    if (!isExtraCome) {
+                    tempList.addAll(any.prizes)
+                    if (actualList.size<=0) {
                         actualList.clear()
                         actualList.addAll(any.prizes)
-                        adapter.notifyDataSetChanged()
                     }
+                    adapter.notifyDataSetChanged()
 
                 }
 
@@ -58,7 +59,7 @@ class NobelPrizeFragment : Fragment(R.layout.fragment_nobel_prize) {
         floating.setOnClickListener {
             if (requireActivity() is MainActivity) {
                 categoryList.clear()
-                for (item in actualList) {
+                for (item in tempList) {
                     if (!categoryList.contains(item.category))
                         categoryList.add(item.category)
                 }
@@ -71,7 +72,6 @@ class NobelPrizeFragment : Fragment(R.layout.fragment_nobel_prize) {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        isExtraCome = true
         debug("Request code:$requestCode & Result code $resultCode")
         if (requireActivity() is MainActivity) {
             (requireActivity() as MainActivity).onBackPressed()
@@ -79,15 +79,16 @@ class NobelPrizeFragment : Fragment(R.layout.fragment_nobel_prize) {
         if (Activity.RESULT_OK == resultCode) {
             if (SELECT_CATEGORY_RESULT_CODE == requestCode) {
                 if (data != null && data.hasExtra(SELECTED_CATEGORY)) {
-                    for (item in actualList) {
-                        if (item.category.equals(data.getStringExtra(SELECTED_CATEGORY), true)) {
+                    val category= data.getStringExtra(SELECTED_CATEGORY)
+                    filterList.clear()
+                    for (item in tempList) {
+                        if (item.category.equals(category, true)) {
                             filterList.add(item)
                         }
                     }
+                    actualList.clear()
                     actualList.addAll(filterList)
-//                    debug("DATA EXTRA" + data.getStringExtra(SELECTED_CATEGORY))
-//                    selectedClient = data.getSerializableExtra(SELECTED_CATEGORY) as WrapperClient
-//                    clientName.setText(selectedClient.name)
+                    adapter.notifyDataSetChanged()
                 }
             }
         }
